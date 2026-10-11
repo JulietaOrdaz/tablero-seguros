@@ -182,7 +182,7 @@ for col, cortes in BANDINGS.items():
 m_freq, m_sev, m_agg = ajustar_modelos(datos)
 datos = agregar_prima_glm(datos, m_freq, m_sev)
 
-st.title("📊 Tablero de cartera — auto")
+st.title("📊 Tablero de cartera — auto. Prueba de actualizacion")
 
 # --- Barra lateral: filtros ---
 st.sidebar.header("Filtros")
