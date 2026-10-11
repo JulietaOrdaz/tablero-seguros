@@ -24,9 +24,47 @@ import streamlit as st
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
 import warnings; warnings.filterwarnings("ignore")
+import gspread
 
 st.set_page_config(page_title="Tablero de cartera — Diplomado ML Seguros",
                    page_icon="📊", layout="wide")
+
+
+@st.cache_resource
+def conectar_google_sheets():
+    """Abre la hoja de cotizaciones con las credenciales privadas."""
+    cliente = gspread.service_account_from_dict(
+        dict(st.secrets["gcp_service_account"])
+    )
+
+    return cliente.open_by_url(
+        st.secrets["sheet_url"]
+    ).sheet1
+
+
+def guardar_cotizacion(perfil, prima_glm, tarifa):
+    """Agrega una nueva cotización a Google Sheets."""
+
+    hoja = conectar_google_sheets()
+
+    fila = [
+        pd.Timestamp.now(tz="America/Mexico_City").isoformat(),
+        int(perfil["edad_conductor"]),
+        str(perfil["cobertura"]),
+        str(perfil["sexo"]),
+        str(perfil["uso"]),
+        str(perfil["combustible"]),
+        int(perfil["antiguedad"]),
+        int(perfil["potencia"]),
+        int(perfil["bonus"]),
+        round(float(prima_glm), 2),
+        round(float(tarifa), 2)
+    ]
+
+    hoja.append_row(
+        fila,
+        value_input_option="USER_ENTERED"
+    )
 
 # --- rutas ancladas a ESTA carpeta (clave para el deploy) ---------------------
 AQUI    = os.path.dirname(os.path.abspath(__file__))
@@ -279,7 +317,10 @@ with tab_cotiza:
               "antiguedad": c3.slider("Antigüedad del vehículo", 0, 40, 5),
               "potencia": c4.slider("Potencia (HP)", 10, 200, 70),
               "bonus": c4.slider("Bonus-malus", 0, 25, 5)}
-    if st.button("Cotizar", type="primary"):
+
+    cotizar_ahora = st.button("Cotizar", type="primary")
+
+    if cotizar_ahora:
         st.session_state["perfil"] = perfil
 
     if "perfil" in st.session_state:
@@ -287,6 +328,22 @@ with tab_cotiza:
         pp_emp, n, nivel_emp = cotizar_empirico(datos, p)
         freq, sev, pp_glm, pp_tw = cotizar_glm(p, m_freq, m_sev, m_agg)
         tarifa = pp_glm / (1 - gastos - margen)
+        # BONUS: guardar únicamente una cotización nueva
+        if cotizar_ahora:
+            try:
+                guardar_cotizacion(p, pp_glm, tarifa)
+                st.success(
+                    "✅ Cotización guardada correctamente en Google Sheets"
+                )
+            except Exception as e:
+                st.warning(
+                    "La prima se calculó, pero no pudo guardarse "
+                    "en Google Sheets."
+                )
+                st.error(
+                    f"Tipo de error: {type(e).__name__}"
+                )
+
 
         # KPIs del cotizador EN ORDEN: 1 lo que dice la data → 2 el modelo → 3 el precio
         k1, k2, k3 = st.columns(3)
