@@ -1,5 +1,7 @@
 # Ordaz Valdez Karina Julieta
 
+Link : https://tablero-seguros-qkcwts6drupiohqvpu55xc.streamlit.app/
+
 Tenemos un tablero interactivo del Diplomado Machine Learning en Seguros de la Facultad de Ciencias, UNAM. El cual incluye KPIs, filtros, gráficos, ratios de rentabilidad y cotizador de primas empíricas, GLM y tarifa.
 
 # ¿Cómo correr localmente nuestra app_stremlit.py?
